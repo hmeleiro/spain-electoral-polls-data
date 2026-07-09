@@ -5,6 +5,7 @@
 .env
 .Renviron
 artifacts/
+logs/
 renv/library/
 renv/staging/
 renv/sandbox/

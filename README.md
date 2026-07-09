@@ -85,7 +85,57 @@ AWS_DEFAULT_REGION=auto
 R2_PREFIX=spain-electoral-polls
 ```
 
+## Cron
+
+On a VM, schedule the full build-and-publish pipeline with:
+
+```sh
+bash /path/to/poll-of-polls-data/scripts/run_pipeline_cron.sh
+```
+
+The entrypoint writes timestamped logs to `logs/` and updates `logs/latest.log`.
+It uses `.env` from the repository root through the underlying R scripts. A
+sample crontab entry for running every six hours:
+
+```cron
+0 */6 * * * cd /path/to/poll-of-polls-data && bash scripts/run_pipeline_cron.sh
+```
+
+Optional environment variables:
+
+```text
+PIPELINE_LOG_DIR=/var/log/spain-electoral-polls
+PIPELINE_LOCK_FILE=/tmp/spain-electoral-polls.lock
+RSCRIPT_BIN=/usr/local/bin/Rscript
+RUN_ID=20260709T120000Z
+```
+
 ## CI/CD
 
-GitHub Actions restores `renv`, runs tests, builds artifacts on every push, and
-publishes to R2 on `main`, scheduled runs, and manual `workflow_dispatch` runs.
+GitHub Actions deploys the repository contents to the VM on every push. The VM
+then runs the pipeline through cron.
+
+Required GitHub Actions secrets:
+
+```text
+DEPLOY_HOST=example.com
+DEPLOY_USER=deploy
+DEPLOY_PORT=22
+DEPLOY_PATH=/srv/spain-electoral-polls/poll-of-polls-data
+DEPLOY_SSH_KEY=<private SSH key with access to DEPLOY_USER@DEPLOY_HOST>
+```
+
+Optional but recommended:
+
+```text
+DEPLOY_KNOWN_HOSTS=<ssh-keyscan output for the remote host>
+```
+
+The deploy uses `rsync --delete`, but excludes local/runtime state such as
+`.env`, `.Renviron`, `artifacts/`, `logs/`, `.git/`, and `renv/library/`, so
+secrets and generated outputs should live on the VM and will not be overwritten
+by GitHub Actions.
+
+The VM needs SSH access for `DEPLOY_USER`, `rsync` installed, R available on the
+cron user's `PATH`, and a local `.env` file in `DEPLOY_PATH` with the R2/API
+configuration.

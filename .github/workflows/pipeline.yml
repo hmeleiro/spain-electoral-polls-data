@@ -1,62 +1,123 @@
-name: Poll of Polls Pipeline
+name: Deploy Poll of Polls Repo
 
 on:
   push:
   workflow_dispatch:
-  schedule:
-    - cron: "0 */6 * * *"
 
 concurrency:
-  group: spain-electoral-polls-${{ github.ref }}
+  group: spain-electoral-polls-deploy-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  test-and-build:
+  deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
 
     env:
-      ARTIFACT_DIR: artifacts
-      SPAINPOLLS_API_URL: ${{ vars.SPAINPOLLS_API_URL }}
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup R
-        uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: 4.5.3
+      - name: Validate deploy configuration
+        shell: bash
+        run: |
+          set -euo pipefail
 
-      - name: Setup renv
-        uses: r-lib/actions/setup-renv@v2
+          for name in DEPLOY_HOST DEPLOY_USER DEPLOY_PORT DEPLOY_PATH DEPLOY_SSH_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing required secret: ${name}"
+              exit 1
+            fi
+          done
 
-      - name: Test
-        run: Rscript -e "testthat::test_dir('tests/testthat')"
+          case "${DEPLOY_PATH}" in
+            /*) ;;
+            *)
+              echo "::error::DEPLOY_PATH must be an absolute path"
+              exit 1
+              ;;
+          esac
 
-      - name: Check SpainPolls API access
-        env:
-          SPAINPOLLS_CI_BYPASS_TOKEN: ${{ secrets.SPAINPOLLS_CI_BYPASS_TOKEN }}
-        run: Rscript scripts/check_spainpolls_api.R
+          if [[ "${DEPLOY_PATH}" == *"'"* ]]; then
+            echo "::error::DEPLOY_PATH cannot contain single quotes"
+            exit 1
+          fi
 
-      - name: Build artifacts
-        env:
-          SPAINPOLLS_CI_BYPASS_TOKEN: ${{ secrets.SPAINPOLLS_CI_BYPASS_TOKEN }}
-        run: Rscript scripts/build_artifacts.R
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
 
-      - name: Upload workflow artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: spain-electoral-polls-artifacts
-          path: artifacts
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${DEPLOY_SSH_KEY}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
 
-      - name: Publish to Cloudflare R2
-        if: github.ref == 'refs/heads/main' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_S3_ENDPOINT: ${{ secrets.AWS_S3_ENDPOINT }}
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION || 'auto' }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
-          R2_PREFIX: ${{ secrets.R2_PREFIX }}
-        run: Rscript scripts/publish_r2.R
+          if [ -n "${DEPLOY_KNOWN_HOSTS}" ]; then
+            printf '%s\n' "${DEPLOY_KNOWN_HOSTS}" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -p "${DEPLOY_PORT}" "${DEPLOY_HOST}" > ~/.ssh/known_hosts
+          fi
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Ensure rsync is available
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if ! command -v rsync >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y rsync
+          fi
+
+      - name: Create remote directory
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ssh -i ~/.ssh/deploy_key \
+            -p "${DEPLOY_PORT}" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "mkdir -p '${DEPLOY_PATH}'"
+
+      - name: Sync repository to remote
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rsync -az --delete \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude '.env' \
+            --exclude '.Renviron' \
+            --exclude '.Rhistory' \
+            --exclude '.RData' \
+            --exclude '.Rproj.user/' \
+            --exclude 'artifacts/' \
+            --exclude 'logs/' \
+            --exclude 'renv/library/' \
+            --exclude 'renv/staging/' \
+            --exclude 'renv/sandbox/' \
+            -e "ssh -i ~/.ssh/deploy_key -p ${DEPLOY_PORT} -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" \
+            ./ "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/"
+
+      - name: Finalize remote deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ssh -i ~/.ssh/deploy_key \
+            -p "${DEPLOY_PORT}" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "chmod +x '${DEPLOY_PATH}/scripts/run_pipeline_cron.sh'"

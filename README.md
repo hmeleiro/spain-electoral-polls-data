@@ -139,3 +139,15 @@ by GitHub Actions.
 The VM needs SSH access for `DEPLOY_USER`, `rsync` installed, R available on the
 cron user's `PATH`, and a local `.env` file in `DEPLOY_PATH` with the R2/API
 configuration.
+
+After the first deploy, restore packages from the project root on the VM:
+
+```sh
+cd /srv/spain-electoral-polls/poll-of-polls-data
+Rscript -e "source('renv/activate.R'); renv::restore(prompt = FALSE)"
+Rscript -e "source('renv/activate.R'); print(.libPaths()); renv::status()"
+```
+
+The first `.libPaths()` entry should point to this project's `renv` library or
+renv cache. If you open an interactive R session manually, start it from
+`DEPLOY_PATH` so `.Rprofile` can activate `renv`.

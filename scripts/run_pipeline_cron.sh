@@ -38,6 +38,12 @@ run_step() {
   log "Finished ${label}"
 }
 
+run_r_script() {
+  local script="$1"
+
+  "${rscript_bin}" -e "source('renv/activate.R'); source('${script}')"
+}
+
 exec 9>"${lock_file}"
 if command -v flock >/dev/null 2>&1; then
   if ! flock -n 9; then
@@ -55,7 +61,7 @@ log "Repository root=${repo_root}"
 log "Log file=${log_file}"
 log "Rscript=${rscript_bin}"
 
-run_step "build artifacts" "${rscript_bin}" scripts/build_artifacts.R
-run_step "publish artifacts to R2" "${rscript_bin}" scripts/publish_r2.R
+run_step "build artifacts" run_r_script scripts/build_artifacts.R
+run_step "publish artifacts to R2" run_r_script scripts/publish_r2.R
 
 log "Pipeline completed successfully"

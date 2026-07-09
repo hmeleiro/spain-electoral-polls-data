@@ -1,0 +1,32 @@
+Package: pollofpolls
+Title: Spain Electoral Poll of Polls Artifacts
+Version: 0.1.0
+Authors@R: c(
+    person("Spain Electoral Project", role = c("aut", "cre"), email = "maintainers@example.com")
+  )
+Description: Builds static spain-electoral-polls and house-effect artifacts for a polling dashboard.
+License: MIT
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Depends:
+    R (>= 4.2)
+Imports:
+    arrow,
+    aws.s3,
+    aws.signature,
+    digest,
+    dplyr,
+    ggplot2,
+    gratia,
+    httr,
+    jsonlite,
+    KFAS,
+    mgcv,
+    spainpolls,
+    testthat (>= 3.0.0),
+    tibble,
+    tidyr
+Suggests:
+    renv
+Config/testthat/edition: 3

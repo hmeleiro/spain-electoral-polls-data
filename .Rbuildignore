@@ -1,0 +1,9 @@
+^renv$
+^renv\.lock$
+^\.github$
+^\.Rproj\.user$
+^artifacts$
+^renv/library$
+^renv/staging$
+^renv/sandbox$
+^.*\.Rproj$

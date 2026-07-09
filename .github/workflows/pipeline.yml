@@ -1,0 +1,54 @@
+name: Poll of Polls Pipeline
+
+on:
+  push:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"
+
+concurrency:
+  group: spain-electoral-polls-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      ARTIFACT_DIR: artifacts
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+
+      - name: Setup renv
+        uses: r-lib/actions/setup-renv@v2
+
+      - name: Test
+        run: Rscript -e "testthat::test_dir('tests/testthat')"
+
+      - name: Build artifacts
+        run: Rscript scripts/build_artifacts.R
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: spain-electoral-polls-artifacts
+          path: artifacts
+
+      - name: Publish to Cloudflare R2
+        if: github.ref == 'refs/heads/main' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_S3_ENDPOINT: ${{ secrets.AWS_S3_ENDPOINT }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION || 'auto' }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_PREFIX: ${{ secrets.R2_PREFIX }}
+        run: Rscript scripts/publish_r2.R

@@ -1,3 +1,18 @@
+configure_spainpolls_api_url <- function() {
+  api_url <- env_chr("SPAINPOLLS_API_URL", "")
+
+  if (!nzchar(api_url)) {
+    return(invisible(FALSE))
+  }
+
+  if (!requireNamespace("spainpolls", quietly = TRUE)) {
+    return(invisible(FALSE))
+  }
+
+  spainpolls::set_spainpolls_api_url(api_url)
+  invisible(TRUE)
+}
+
 configure_spainpolls_ci_request <- function() {
   token <- env_chr("SPAINPOLLS_CI_BYPASS_TOKEN", "")
   user_agent <- env_chr("SPAINPOLLS_USER_AGENT", "")
@@ -35,7 +50,8 @@ spainpolls_ci_request <- function(path, query = list(), token = "", user_agent =
   req <- httr2::request(url) |>
     httr2::req_timeout(timeout_seconds) |>
     httr2::req_user_agent(user_agent) |>
-    httr2::req_headers(Accept = "application/json")
+    httr2::req_headers(Accept = "application/json") |>
+    httr2::req_error(is_error = function(resp) FALSE)
 
   if (nzchar(token)) {
     req <- httr2::req_headers(req, "X-SpainPolls-CI-Token" = token)
@@ -55,8 +71,25 @@ spainpolls_ci_request <- function(path, query = list(), token = "", user_agent =
     }
   )
 
-  if (httr2::resp_status(resp) >= 400) {
-    get("abort_http_error", ns)(resp, path = path, query = query)
+  status <- httr2::resp_status(resp)
+  if (status >= 400) {
+    headers <- httr2::resp_headers(resp)
+    cf_ray <- headers[["cf-ray"]] %||% "<missing>"
+    server <- headers[["server"]] %||% "<missing>"
+    body <- tryCatch(
+      httr2::resp_body_string(resp),
+      error = function(cnd) ""
+    )
+    body <- gsub("[\r\n\t]+", " ", body)
+    body <- substr(body, 1, 500)
+
+    cli::cli_abort(c(
+      "Spain Electoral Polls API rejected the CI request.",
+      "i" = "HTTP status: {status}",
+      "i" = "Server: {server}",
+      "i" = "CF-Ray: {cf_ray}",
+      "i" = "Response preview: {body}"
+    ))
   }
 
   get("parse_json_response", ns)(resp)

@@ -1,6 +1,7 @@
 source("R/utils.R")
 load_env_file(".env", quiet = TRUE)
 source_project_files("R")
+configure_spainpolls_api_url()
 configure_spainpolls_ci_request()
 
 config <- config_from_env()

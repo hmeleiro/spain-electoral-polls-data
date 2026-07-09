@@ -17,6 +17,7 @@ jobs:
 
     env:
       ARTIFACT_DIR: artifacts
+      SPAINPOLLS_API_URL: ${{ vars.SPAINPOLLS_API_URL }}
 
     steps:
       - name: Checkout
@@ -32,6 +33,11 @@ jobs:
 
       - name: Test
         run: Rscript -e "testthat::test_dir('tests/testthat')"
+
+      - name: Check SpainPolls API access
+        env:
+          SPAINPOLLS_CI_BYPASS_TOKEN: ${{ secrets.SPAINPOLLS_CI_BYPASS_TOKEN }}
+        run: Rscript scripts/check_spainpolls_api.R
 
       - name: Build artifacts
         env:

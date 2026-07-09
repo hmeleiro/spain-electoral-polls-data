@@ -2,10 +2,10 @@
   if (is.null(x)) y else x
 }
 
-api_url <- Sys.getenv(
-  "SPAINPOLLS_API_URL",
-  unset = "https://pollsdb.spainelectoralproject.com"
-)
+api_url <- Sys.getenv("SPAINPOLLS_API_URL", unset = "")
+if (!nzchar(api_url)) {
+  api_url <- "https://pollsdb.spainelectoralproject.com"
+}
 api_url <- sub("/+$", "", api_url)
 url <- paste0(api_url, "/api/v1/polls")
 

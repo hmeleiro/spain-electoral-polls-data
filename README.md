@@ -45,18 +45,6 @@ FILTER_OVERLAPPING_FIELDWORK=true
 FRESHNESS_DAYS=45
 ```
 
-If Cloudflare blocks GitHub-hosted runners from the public `spainpolls` API,
-set a GitHub Actions secret named `SPAINPOLLS_CI_BYPASS_TOKEN` and create a
-Cloudflare rule for `pollsdb.spainelectoralproject.com/api/v1/*` that skips the
-relevant bot/WAF checks when request header `X-SpainPolls-CI-Token` matches
-that secret.
-
-If the Cloudflare block is Bot Fight Mode, a WAF skip rule cannot bypass it.
-In that case, either disable Bot Fight Mode for the API zone, use Super Bot
-Fight Mode with a skip rule, run CI from a self-hosted/larger runner with an
-allowlisted static IP, or set a repository variable named `SPAINPOLLS_API_URL`
-to a non-proxied API origin/hostname.
-
 ## Publish To Cloudflare R2
 
 Build first, then publish:

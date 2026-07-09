@@ -144,10 +144,14 @@ After the first deploy, restore packages from the project root on the VM:
 
 ```sh
 cd /srv/spain-electoral-polls/poll-of-polls-data
-Rscript -e "source('renv/activate.R'); renv::restore(prompt = FALSE)"
+Rscript scripts/bootstrap_renv_vm.R
 Rscript -e "source('renv/activate.R'); print(.libPaths()); renv::status()"
 ```
 
 The first `.libPaths()` entry should point to this project's `renv` library or
 renv cache. If you open an interactive R session manually, start it from
 `DEPLOY_PATH` so `.Rprofile` can activate `renv`.
+
+If `renv::restore()` tries to install `nanonext 1.10.0` while `renv.lock`
+expects `1.8.1`, use `scripts/bootstrap_renv_vm.R`; it installs `nanonext` and
+`mirai` from explicit CRAN Archive URLs before restoring the rest.

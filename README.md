@@ -45,6 +45,12 @@ FILTER_OVERLAPPING_FIELDWORK=true
 FRESHNESS_DAYS=45
 ```
 
+If Cloudflare blocks GitHub-hosted runners from the public `spainpolls` API,
+set a GitHub Actions secret named `SPAINPOLLS_CI_BYPASS_TOKEN` and create a
+Cloudflare rule for `pollsdb.spainelectoralproject.com/api/v1/*` that skips the
+relevant bot/WAF checks when request header `X-SpainPolls-CI-Token` matches
+that secret.
+
 ## Publish To Cloudflare R2
 
 Build first, then publish:

@@ -34,6 +34,8 @@ jobs:
         run: Rscript -e "testthat::test_dir('tests/testthat')"
 
       - name: Build artifacts
+        env:
+          SPAINPOLLS_CI_BYPASS_TOKEN: ${{ secrets.SPAINPOLLS_CI_BYPASS_TOKEN }}
         run: Rscript scripts/build_artifacts.R
 
       - name: Upload workflow artifacts

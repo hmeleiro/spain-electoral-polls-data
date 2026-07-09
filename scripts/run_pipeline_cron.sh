@@ -41,7 +41,7 @@ run_step() {
 run_r_script() {
   local script="$1"
 
-  "${rscript_bin}" -e "source('renv/activate.R'); source('${script}')"
+  "${rscript_bin}" -e "source('${script}')"
 }
 
 exec 9>"${lock_file}"

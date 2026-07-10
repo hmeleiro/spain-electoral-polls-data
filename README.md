@@ -82,8 +82,15 @@ bash /path/to/poll-of-polls-data/scripts/run_pipeline_cron.sh
 ```
 
 The entrypoint writes timestamped logs to `logs/` and updates `logs/latest.log`.
-It uses `.env` from the repository root through the underlying R scripts. A
-sample crontab entry for running every six hours:
+It uses `.env` from the repository root through the underlying R scripts.
+
+In production, this pipeline is normally triggered by
+`spain-electoral-polls-etl/scripts/run_scraper_cron.sh` after a successful new
+Wikipedia revision. Do not keep an independent six-hour cron enabled in that
+setup, otherwise the dashboard artifacts may be rebuilt even when the source
+database has not changed.
+
+For standalone/manual deployments, a sample crontab entry is:
 
 ```cron
 0 */6 * * * cd /path/to/poll-of-polls-data && bash scripts/run_pipeline_cron.sh

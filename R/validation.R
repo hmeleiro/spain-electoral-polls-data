@@ -1,5 +1,6 @@
 validate_public_artifacts <- function(
   artifacts,
+  election_key = "congreso_espana_2026",
   current_date = Sys.Date(),
   freshness_days = 45L
 ) {
@@ -28,7 +29,7 @@ validate_public_artifacts <- function(
     duplicate_poll_results = check_duplicate_poll_results(artifacts$poll_results),
     recent_next_election_poll = check_recent_poll(
       artifacts$polls,
-      election_key = "congreso_espana_2027",
+      election_key = election_key,
       current_date = current_date,
       freshness_days = freshness_days
     ),
@@ -60,10 +61,15 @@ validate_public_artifacts <- function(
 
 assert_validation_ok <- function(validation_report) {
   if (identical(validation_report$status, "failed")) {
-    failed <- names(Filter(
+    failed_checks <- Filter(
       \(x) identical(x$status, "fail") && identical(x$severity, "error"),
       validation_report$checks
-    ))
+    )
+    failed <- vapply(
+      names(failed_checks),
+      \(name) paste0(name, " (", failed_checks[[name]]$message, ")"),
+      character(1)
+    )
     stop(
       "Artifact validation failed: ",
       paste(failed, collapse = ", "),
@@ -129,14 +135,40 @@ check_duplicate_poll_results <- function(poll_results) {
 }
 
 check_recent_poll <- function(polls, election_key, current_date, freshness_days) {
-  latest <- polls |>
-    dplyr::filter(.data$election_key == election_key) |>
-    dplyr::summarise(latest = max(.data$fieldwork_end, na.rm = TRUE)) |>
-    dplyr::pull(.data$latest)
+  required <- c("election_key", "fieldwork_end")
+  missing_cols <- setdiff(required, names(polls))
 
-  ok <- length(latest) == 1 &&
-    !is.na(latest) &&
-    latest >= current_date - freshness_days
+  if (length(missing_cols) > 0) {
+    return(list(
+      status = "fail",
+      severity = "error",
+      message = paste(
+        "cannot check poll freshness; polls is missing columns:",
+        paste(missing_cols, collapse = ", ")
+      )
+    ))
+  }
+
+  dated_polls <- polls |>
+    dplyr::filter(
+      .data$election_key == election_key,
+      !is.na(.data$fieldwork_end)
+    )
+
+  if (nrow(dated_polls) == 0) {
+    return(list(
+      status = "fail",
+      severity = "error",
+      message = paste(
+        "no polls with a non-missing fieldwork_end for",
+        election_key
+      )
+    ))
+  }
+
+  latest <- max(as.Date(dated_polls$fieldwork_end))
+
+  ok <- latest >= current_date - freshness_days
 
   list(
     status = if (ok) "pass" else "fail",
@@ -145,7 +177,9 @@ check_recent_poll <- function(polls, election_key, current_date, freshness_days)
       "latest",
       election_key,
       "fieldwork_end is",
-      as.character(latest)
+      as.character(latest),
+      "; required on or after",
+      as.character(current_date - freshness_days)
     )
   )
 }

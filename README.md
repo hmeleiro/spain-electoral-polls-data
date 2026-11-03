@@ -38,8 +38,8 @@ Useful environment variables:
 
 ```text
 ARTIFACT_DIR=artifacts
-AVERAGE_ELECTION_KEY=congreso_espana_2027
-HOUSE_EFFECT_ELECTION_KEYS=congreso_espana_2027,congreso_espana_2023
+AVERAGE_ELECTION_KEY=congreso_espana_2026
+HOUSE_EFFECT_ELECTION_KEYS=congreso_espana_2026,congreso_espana_2023
 PARTIES=psoe,pp,vox,sumar,podemos,salf
 FILTER_OVERLAPPING_FIELDWORK=true
 FRESHNESS_DAYS=45

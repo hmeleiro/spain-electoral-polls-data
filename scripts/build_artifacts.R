@@ -11,6 +11,7 @@ run_id <- Sys.getenv(
 artifacts <- build_poll_artifacts(config)
 validation <- validate_public_artifacts(
   artifacts,
+  election_key = config$average_election_key,
   current_date = Sys.Date(),
   freshness_days = config$freshness_days
 )

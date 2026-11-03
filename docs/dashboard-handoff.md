@@ -25,8 +25,8 @@ The latest local manifest at handoff time reports:
 generated_at: 2026-07-07T15:42:44Z
 run_id: 20260707T154211Z
 source: spainpolls
-average_election_key: congreso_espana_2027
-house_effect_election_keys: congreso_espana_2027, congreso_espana_2023
+average_election_key: congreso_espana_2026
+house_effect_election_keys: congreso_espana_2026, congreso_espana_2023
 parties: psoe, pp, vox, sumar
 latest_fieldwork_end: 2026-07-04
 validation_status: passed

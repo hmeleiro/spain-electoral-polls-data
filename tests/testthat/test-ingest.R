@@ -1,7 +1,7 @@
 test_that("non_overlapping_poll_ids keeps the newest non-overlapping polls", {
   polls <- tibble::tibble(
     id = c("older_overlap", "latest", "older_clear", "other_pollster"),
-    election_key = "congreso_espana_2027",
+    election_key = "congreso_espana_2026",
     pollster_key = c("demo", "demo", "demo", "other"),
     fieldwork_start = as.Date(c(
       "2026-07-03",
@@ -35,13 +35,13 @@ test_that("non_overlapping_poll_ids keeps the newest non-overlapping polls", {
 test_that("filter_poll_timeseries_overlapping_fieldwork filters by poll_id", {
   ts <- tibble::tibble(
     poll_id = c("older_overlap", "older_overlap", "latest"),
-    election_key = "congreso_espana_2027",
+    election_key = "congreso_espana_2026",
     party_key = c("psoe", "pp", "psoe"),
     vote_share = c(30, 34, 31)
   )
   polls <- tibble::tibble(
     poll_id = c("older_overlap", "latest"),
-    election_key = "congreso_espana_2027",
+    election_key = "congreso_espana_2026",
     pollster_key = "demo",
     fieldwork_start = as.Date(c("2026-07-03", "2026-07-05")),
     fieldwork_end = as.Date(c("2026-07-07", "2026-07-09")),
@@ -57,14 +57,14 @@ test_that("filter_poll_timeseries_overlapping_fieldwork filters by poll_id", {
 test_that("enrich_poll_timeseries_metadata fills dates from poll metadata", {
   ts <- tibble::tibble(
     poll_id = 1L,
-    election_key = "congreso_espana_2027",
+    election_key = "congreso_espana_2026",
     date = as.Date("2026-07-09"),
     party_key = "psoe",
     vote_share = 30
   )
   polls <- tibble::tibble(
     id = 1L,
-    election_key = "congreso_espana_2027",
+    election_key = "congreso_espana_2026",
     fieldwork_start = as.Date("2026-07-05"),
     fieldwork_end = as.Date("2026-07-09"),
     publication_date = as.Date("2026-07-10"),
@@ -83,7 +83,7 @@ test_that("enrich_poll_timeseries_metadata fills dates from poll metadata", {
 test_that("non_overlapping_poll_ids keeps polls with incomplete fieldwork dates", {
   polls <- tibble::tibble(
     poll_id = c("unknown", "dated"),
-    election_key = "congreso_espana_2027",
+    election_key = "congreso_espana_2026",
     pollster_key = "demo",
     fieldwork_start = as.Date(c(NA, "2026-07-05")),
     fieldwork_end = as.Date(c(NA, "2026-07-09")),

@@ -1,7 +1,7 @@
 default_config <- function() {
   list(
-    average_election_key = "congreso_espana_2027",
-    house_effect_election_keys = c("congreso_espana_2027", "congreso_espana_2023"),
+    average_election_key = "congreso_espana_2026",
+    house_effect_election_keys = c("congreso_espana_2026", "congreso_espana_2023"),
     parties = c("psoe", "pp", "vox", "sumar", "podemos", "salf"),
     date_field = "fieldwork_end",
     filter_overlapping_fieldwork = TRUE,
